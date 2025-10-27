@@ -212,35 +212,3 @@ console.log("Imported Ability Data:", abilityData);
 });
 
 
-
-// used during development, obsolete, probably.
-// const sampleClipboard = `\`\`\`
-// ----------
-// \"Jorams Chaos Warriors\"
-// Slaves to Darkness
-// 965pts | 9 fighters | Valid ✓  
-
-// - Aspiring Champion (155pts, Hero)
-// - Chaos Warrior with Chaos Hand Weapon and Chaos Runeshield (100pts)
-// - Chaos Warrior with Chaos Halberd and Chaos Runeshield (95pts)
-// - Chaos Warrior with Chaos Halberd and Chaos Runeshield (95pts)
-// - Chaos Warrior with Chaos Halberd and Chaos Runeshield (95pts)
-// - Chaos Warrior with Chaos Hand Weapon and Chaos Runeshield (100pts)
-// - Razek Godblessed (115pts)
-// - Chaos Warrior with Chaos Greatblade (105pts)
-// - Chaos Warrior with Chaos Greatblade (105pts)
-// ----------
-// Generated on Warcrier.net
-// \`\`\``;
-
-// // console.log(sampleClipboard);
-// let parsedData = parseWarcryClipboard(sampleClipboard);
-// //  console.log(result01);
-// // console.log(matchFighters(result01.fighters));
-// let matchedFighters = matchFighters(parsedData.fighters);
-// const warbandabilities = findRelevantAbilities(matchedFighters);
-
-// // console.log(matchedFighters);
-// // console.log(findRelevantAbilities(matchedFighters));
-// // preparePDFReadyJson(result01, matchedFighters, warbandabilities));
-// // Function to trigger JSON file download
