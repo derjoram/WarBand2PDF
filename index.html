@@ -1,0 +1,91 @@
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WarBand2PDF</title>
+</head>
+<body>
+    <h1>WarCry Roster CSV Generator</h1>
+    <textarea id="warcrier-data" placeholder="Paste WarCrier export here..."></textarea>
+    <button onclick="processData()">Generate CSV</button>
+    
+    <script>
+        function parseWarcryClipboard(clipboardText) {
+    const lines = clipboardText.trim().split('\n');
+    
+    // Find the actual content (skip dashes and "Generated on" line)
+    const contentLines = lines.filter(line => 
+        !line.includes('---') && 
+        !line.includes('Generated on')
+    ).map(line => line.trim()).filter(line => line);
+    
+    // Extract warband name (first line, remove quotes)
+    const warbandName = contentLines[0].replace(/"/g, '');
+    
+    // Extract faction (second line)
+    const faction = contentLines[1];
+    
+    // Extract points info (third line)
+    const pointsLine = contentLines[2];
+    const pointsMatch = pointsLine.match(/(\d+)pts/);
+    const fightersMatch = pointsLine.match(/(\d+) fighters/);
+    const totalPoints = pointsMatch ? parseInt(pointsMatch[1]) : 0;
+    const fighterCount = fightersMatch ? parseInt(fightersMatch[1]) : 0;
+    
+    // Extract fighters (lines starting with "- ")
+    const fighters = [];
+    for (let i = 3; i < contentLines.length; i++) {
+        const line = contentLines[i];
+        if (line.startsWith('- ')) {
+            // Parse fighter line
+            const fighterText = line.substring(2); // Remove "- "
+            
+            // Extract name and points
+            const pointsMatch = fighterText.match(/\((\d+)pts/);
+            const points = pointsMatch ? parseInt(pointsMatch[1]) : 0;
+            
+            // Extract name (everything before the points)
+            const nameMatch = fighterText.match(/^(.+?)\s*\(/);
+            const name = nameMatch ? nameMatch[1].trim() : fighterText;
+            
+            // Check if hero
+            const isHero = fighterText.includes('Hero');
+            
+            fighters.push({
+                name: name,
+                points: points,
+                isHero: isHero,
+                fullText: fighterText
+            });
+        }
+    }
+    
+    return {
+        warbandName: warbandName,
+        faction: faction,
+        totalPoints: totalPoints,
+        fighterCount: fighterCount,
+        fighters: fighters
+    };
+}
+
+// Example usage:
+const clipboardData = `----------
+"My Warband"
+Slaves to Darkness
+950pts | 6 fighters | Valid ✓  
+- Aspiring Champion (155pts, Hero)
+- Chaos Knight with Ensorcelled Weapon and Chaos Runeshield (205pts)
+- Chaos Knight with Cursed Lance and Chaos Runeshield (195pts)
+- Chaos Warrior with Chaos Greatblade (105pts)
+- Chaos Chosen Exalted Champion (190pts, Hero)
+- Chaos Warrior with Chaos Hand Weapon and Chaos Runeshield (100pts)
+----------
+Generated on Warcrier.net`;
+
+const parsed = parseWarcryClipboard(clipboardData);
+console.log(parsed);
+    </script>
+</body>
+</html>
