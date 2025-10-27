@@ -94,23 +94,29 @@ function matchFighters(Fighterlist, fighterData) {
 }
 
 // This function finds all relevant abilities from the matched fighters in the abilities.json database
-function findRelevantAbilities(matchedFighters, abilityData) {
-   abilitiesData = abilityData;
+function findRelevantAbilities(matchedFighters, abilitiesData) {
+    // 1. Collect all unique warband names from the fighters
+    const warbandNames = Array.from(new Set(matchedFighters.map(f => f.warband).filter(Boolean)));
 
-    // Filter abilities for the given warband and universal abilities
-    const relevantAbilities = abilitiesData.filter(ability => 
-        ability.warband === matchFighters.warband || ability.warband === 'universal'
-    );
+    // 2. Get all abilities for each warband and universal abilities
+    let relevantAbilities = [];
+    warbandNames.forEach(warbandName => {
+        relevantAbilities.push(
+            ...abilitiesData.filter(ability =>
+                ability.warband === warbandName || ability.warband === 'universal'
+            )
+        );
+    });
 
-    // Add abilities specific to the matched fighters
+    // 3. Add abilities specific to the matched fighters (if any)
     matchedFighters.forEach(fighter => {
-        const fighterAbilities = abilitiesData.filter(ability => 
+        const fighterAbilities = abilitiesData.filter(ability =>
             ability.fighterName === fighter.name
         );
         relevantAbilities.push(...fighterAbilities);
     });
 
-    // Remove duplicates (if any) based on ability name
+    // 4. Remove duplicates by ability name
     const uniqueAbilities = Array.from(new Map(relevantAbilities.map(ability => [ability.name, ability])).values());
 
     return uniqueAbilities;
@@ -137,10 +143,19 @@ function preparePDFReadyJson(parsedData, matchedFighters, abilities) {
             wounds: fighter.wounds || 0,
             isHero: fighter.isHero || false,
             grand_alliance: fighter.grand_alliance || '',
+            grand_alliance_image: `./images/factions-${(fighter.grand_alliance || '').replace(/ |:/g, '-')}-${(fighter.warband || '').replace(/ |:/g, '-')}.svg`,
             warband: fighter.warband || '',
-            subfaction: fighter.subfaction || '',
-            runemarks: fighter.runemarks || []
+            subfaction: fighter.subfaction || ''
         };
+
+        // Flatten runemarks and add runemark-image keys
+        if (fighter.runemarks && fighter.runemarks.length > 0) {
+            fighter.runemarks.forEach((runemark, index) => {
+            const num = index + 1;
+            fighterData[`runemark${num}`] = runemark;
+            fighterData[`runemark${num}-image`] = `./images/fighters-${(runemark || '').replace("hero", 'leader')}.svg`;
+            });
+        }
 
         // Add flattened weapon properties
         if (fighter.weapons && fighter.weapons.length > 0) {
@@ -153,26 +168,68 @@ function preparePDFReadyJson(parsedData, matchedFighters, abilities) {
                 fighterData[`weapon${num}min_range`] = weapon.min_range || 0;
                 fighterData[`weapon${num}max_range`] = weapon.max_range || 0;
                 fighterData[`weapon${num}runemark`] = weapon.runemark || '';
+                fighterData[`weapon${num}runemark-image`] = `./images/weapons-${(weapon.runemark || '').replace(/ /g, '-')}.svg`;
             });
         }
 
         return fighterData;
     });
 
-    // 3. Prepare abilities data - array of ability objects
-    const warbandAbilities = abilities.map(ability => ({
+// 3. Prepare abilities data - array of ability objects
+const warbandAbilities = abilities.map(ability => {
+    // Find the warband icon from the first matched fighter with the same warband
+    const warbandImage =
+        ability.warband === 'universal'
+            ? ''
+            : (
+                fighters.find(f =>
+                    f.warband &&
+                    f.warband.trim().toLowerCase() === ability.warband.trim().toLowerCase()
+                )?.grand_alliance_image || ''
+            );
+
+    const abilityObj = {
         name: ability.name || '',
         cost: ability.cost || '',
         description: ability.description || '',
         warband: ability.warband || '',
-        runemarks: ability.runemarks || [],
+        warbandImage: warbandImage,
         _id: ability._id || ''
-    }));
+    };
+
+    // Flatten sorted runemarks and add runemark-image keys
+    const sortedRunemarks = Array.isArray(ability.runemarks) ? ability.runemarks.slice().sort() : [];
+    if (sortedRunemarks.length > 0) {
+        sortedRunemarks.forEach((runemark, index) => {
+            const num = index + 1;
+            // If runemark is an object, use its value
+            const runemarkValue = typeof runemark === 'object' ? runemark.value || '' : runemark;
+            abilityObj[`runemark${num}`] = runemarkValue;
+            abilityObj[`runemark${num}-image`] = `./images/fighters-${(runemarkValue || '').replace("hero", 'leader')}.svg`;
+        });
+    }
+
+    return abilityObj;
+});
+const costOrder = ['double', 'triple', 'quad', 'reaction'];
+
+const sortedAbilities = warbandAbilities.slice().sort((a, b) => {
+    // Get cost indices (default to a high value if not found)
+    const aIndex = costOrder.indexOf((a.cost || '').toLowerCase());
+    const bIndex = costOrder.indexOf((b.cost || '').toLowerCase());
+
+    // Sort by cost order first
+    if (aIndex !== bIndex) {
+        return aIndex - bIndex;
+    }
+    // If cost is the same, sort by name alphabetically
+    return (a.name || '').localeCompare(b.name || '');
+});
 
     return {
         warbandInfo,
         fighters,
-        warbandAbilities
+        warbandAbilities: sortedAbilities
     };
 }
 
