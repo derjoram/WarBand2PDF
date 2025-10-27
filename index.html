@@ -1,15 +1,56 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WarBand2PDF</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>WarCry Roster CSV Generator</h1>
-    <textarea id="warcrier-data" placeholder="Paste WarCrier export here..."></textarea>
-    <input type="text" id="filename" placeholder="Enter filename for CSV" />
-    <button id="generate-btn">Generate CSV</button>
+    <div class="container">
+        <header>
+            <h1>WarCry Warband JSON Generator</h1>
+        </header>
+
+        <div class="description">
+            <h2>How it works</h2>
+            <div class="step">Export your warband from WarCrier.net into your clipboard</div>
+            <div class="step">Paste the exported text into the box below</div>
+            <div class="step">Click "Generate JSON" to create a structured file that includes all fighter stats and abilities</div>
+            <div class="step">Use the generated JSON file with your PDF template</div>
+        </div>
+
+        <div class="input-section">
+            <textarea id="warcrier-data" placeholder="Paste your WarCrier export here...
+Example format:
+```
+----------
+&quot;Your Warband&quot;
+Slaves to Darkness
+965pts | 9 fighters | Valid ✓  
+
+- Aspiring Champion (155pts, Hero)
+- Chaos Warrior with Chaos Hand Weapon and Chaos Runeshield (100pts)
+- Chaos Warrior with Chaos Halberd and Chaos Runeshield (95pts)
+- Chaos Warrior with Chaos Halberd and Chaos Runeshield (95pts)
+- Chaos Warrior with Chaos Halberd and Chaos Runeshield (95pts)
+- Chaos Warrior with Chaos Hand Weapon and Chaos Runeshield (100pts)
+- Razek Godblessed (115pts)
+- Chaos Warrior with Chaos Greatblade (105pts)
+- Chaos Warrior with Chaos Greatblade (105pts)
+----------
+Generated on Warcrier.net
+```"></textarea>
+            
+            <div class="button-group">
+                <button id="generate-btn">Generate JSON</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>This tool enhances WarCrier exports with detailed fighter stats and abilities for PDF generation. It is not in any way affiliated with WarCry, Warhammer, or WarCrier. </p>
+        </footer>
+    </div>
 
     <script src="code.js"></script>
 </body>

@@ -1,5 +1,27 @@
-// import { readFileSync, writeFileSync } from 'fs';
+// Global storage for loaded data
+let fighterData = null;
+let abilityData = null;
 
+// Load both JSON files and store them for use
+async function loadData() {
+    try {
+        // Load fighters data
+        const fightersResponse = await fetch('./fighters.json');
+        if (!fightersResponse.ok) throw new Error(`HTTP error! status: ${fightersResponse.status}`);
+        fighterData = await fightersResponse.json();
+        
+        // Load abilities data
+        const abilitiesResponse = await fetch('./abilities.json');
+        if (!abilitiesResponse.ok) throw new Error(`HTTP error! status: ${abilitiesResponse.status}`);
+        abilityData = await abilitiesResponse.json();
+        
+        console.log(`Loaded ${fighterData.length} fighters and ${abilityData.length} abilities`);
+        return true;
+    } catch (error) {
+        console.error('Error loading data:', error);
+        return false;
+    }
+}
  
  function parseWarcryClipboard(clipboardText) {
     const lines = clipboardText.trim().split('\n');
@@ -60,22 +82,9 @@
     };
 }
 // This function mateches fighters from the parsed list to the fighters.json database
-function matchFighters(Fighterlist) {
-    // Load the fighters.json file
-    let fightersData = [];
-    fetch('./fighters.json') // Ensure the file is in the same directory as the script
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            fightersData = data;
-            // Continue processing after data is loaded
-        })
-        .catch(error => console.error('Error loading fighters.json:', error));
-    // Create a new list with matching entries
+function matchFighters(Fighterlist, fighterData) {
+    let fightersData = fighterData;
+        // Create a new list with matching entries
     const matchedFighters = Fighterlist.map(fighter => {
        return fightersData.find(f => f.name === fighter.name) || null;
     }).filter(f => f !== null);
@@ -85,16 +94,8 @@ function matchFighters(Fighterlist) {
 }
 
 // This function finds all relevant abilities from the matched fighters in the abilities.json database
-function findRelevantAbilities(matchedFighters) {
-    // Load the abilities.json file
-    let abilitiesData = [];
-    fetch('./abilities.json')
-        .then(response => response.json())
-        .then(data => {
-            abilitiesData = data;
-            // Continue processing after data is loaded
-        })
-        .catch(error => console.error('Error loading abilities.json:', error));
+function findRelevantAbilities(matchedFighters, abilityData) {
+   abilitiesData = abilityData;
 
     // Filter abilities for the given warband and universal abilities
     const relevantAbilities = abilitiesData.filter(ability => 
@@ -154,6 +155,64 @@ function preparePDFReadyJson(parsedData, matchedFighters, abilities) {
 }
 
 
+function downloadJSONFile(data, filename) {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// // Trigger the download of the JSON file
+// downloadJSONFile(preparePDFReadyJson(parsedData, matchedFighters, warbandabilities), 'warband2pdf.json');
+
+// Attach a click listener to the Generate CSV button. This keeps logic out of markup
+// Initialize data when the page loads
+document.addEventListener('DOMContentLoaded', async () => {
+    const loaded = await loadData();
+    if (!loaded) {
+        console.error('Failed to load required data files. Make sure fighters.json and abilities.json are present and the page is served from a web server.');
+    }
+});
+document.getElementById('generate-btn').addEventListener('click', function () {
+    const text = document.getElementById('warcrier-data').value || '';
+    if (!text.trim()) {
+        alert('Paste your WarCrier export into the textarea first.');
+        return;
+    }
+
+console.log("Imported Fighter Data:", fighterData);
+console.log("Imported Ability Data:", abilityData);
+
+    // Parse the clipboard text from the textarea
+    const parsedData = parseWarcryClipboard(text);
+    console.log('Parsed Data:', parsedData);
+
+    // Match fighters from the parsed data
+    const matchedFighters = matchFighters(parsedData.fighters, fighterData);
+    console.log('Matched Fighters:', matchedFighters);
+
+    // Find relevant abilities for the matched fighters
+    const warbandAbilities = findRelevantAbilities(matchedFighters, abilityData);
+    console.log('Warband Abilities:', warbandAbilities);    
+
+    // Prepare the final JSON data for PDF generation
+    const pdfReadyData = preparePDFReadyJson(parsedData, matchedFighters, warbandAbilities);
+    console.log('Prepared PDF Ready Data:', pdfReadyData);
+
+    // Trigger the download of the JSON file
+    downloadJSONFile(pdfReadyData, 'warband2pdf.json');
+
+    console.log('JSON file generated and downloaded:', pdfReadyData);
+});
+
+
+
 // used during development, obsolete, probably.
 // const sampleClipboard = `\`\`\`
 // ----------
@@ -185,44 +244,3 @@ function preparePDFReadyJson(parsedData, matchedFighters, abilities) {
 // // console.log(findRelevantAbilities(matchedFighters));
 // // preparePDFReadyJson(result01, matchedFighters, warbandabilities));
 // // Function to trigger JSON file download
-// function downloadJSONFile(data, filename) {
-//     const jsonString = JSON.stringify(data, null, 2);
-//     const blob = new Blob([jsonString], { type: 'application/json' });
-//     const url = URL.createObjectURL(blob);
-
-//     const a = document.createElement('a');
-//     a.href = url;
-//     a.download = filename;
-//     a.click();
-
-//     URL.revokeObjectURL(url);
-// }
-
-// // Trigger the download of the JSON file
-// downloadJSONFile(preparePDFReadyJson(parsedData, matchedFighters, warbandabilities), 'warband2pdf.json');
-
-// Attach a click listener to the Generate CSV button. This keeps logic out of markup
-document.getElementById('generate-btn').addEventListener('click', function () {
-    const text = document.getElementById('warcrier-data').value || '';
-    if (!text.trim()) {
-        alert('Paste your WarCrier export into the textarea first.');
-        return;
-    }
-
-    // Parse the clipboard text from the textarea
-    const parsedData = parseWarcryClipboard(text);
-
-    // Match fighters from the parsed data
-    const matchedFighters = matchFighters(parsedData.fighters);
-
-    // Find relevant abilities for the matched fighters
-    const warbandAbilities = findRelevantAbilities(matchedFighters);
-
-    // Prepare the final JSON data for PDF generation
-    const pdfReadyData = preparePDFReadyJson(parsedData, matchedFighters, warbandAbilities);
-
-    // Trigger the download of the JSON file
-    downloadJSONFile(pdfReadyData, 'warband2pdf.json');
-
-    console.log('JSON file generated and downloaded:', pdfReadyData);
-});
