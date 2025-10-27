@@ -117,55 +117,86 @@ function findRelevantAbilities(matchedFighters, abilityData) {
 }
 
 function preparePDFReadyJson(parsedData, matchedFighters, abilities) {
-    const pdfReadyData = {
-        warbandName: parsedData.warbandName,
-        faction: parsedData.faction,
-        totalPoints: parsedData.totalPoints,
-        fighterCount: parsedData.fighterCount,
-    };
+    // 1. Prepare warband info (header) data - just an array with one object
+    const warbandInfo = [{
+        name: parsedData.warbandName || '',
+        faction: parsedData.faction || '',
+        totalPoints: parsedData.totalPoints || 0,
+        fighterCount: parsedData.fighterCount || 0,
+        grand_alliance: matchedFighters[0]?.grand_alliance || '',
+        subfaction: matchedFighters[0]?.subfaction || ''
+    }];
 
-    // Flatten fighter data
-    matchedFighters.forEach((fighter, index) => {
-        Object.keys(fighter).forEach(key => {
-            pdfReadyData[`fighter${index + 1}${key.charAt(0).toUpperCase() + key.slice(1)}`] = fighter[key];
-        });
+    // 2. Prepare fighters data - array of fighter objects
+    const fighters = matchedFighters.map(fighter => {
+        const fighterData = {
+            name: fighter.name || '',
+            points: fighter.points || 0,
+            movement: fighter.movement || 0,
+            toughness: fighter.toughness || 0,
+            wounds: fighter.wounds || 0,
+            isHero: fighter.isHero || false,
+            grand_alliance: fighter.grand_alliance || '',
+            warband: fighter.warband || '',
+            subfaction: fighter.subfaction || '',
+            runemarks: fighter.runemarks || []
+        };
 
-        // Flatten weapon data
-        if (fighter.weapons) {
-            fighter.weapons.forEach((weapon, weaponIndex) => {
-                Object.keys(weapon).forEach(key => {
-                    pdfReadyData[`fighter${index + 1}Weapon${weaponIndex + 1}${key.charAt(0).toUpperCase() + key.slice(1)}`] = weapon[key];
-                });
-
-
+        // Add flattened weapon properties
+        if (fighter.weapons && fighter.weapons.length > 0) {
+            fighter.weapons.forEach((weapon, index) => {
+                const num = index + 1;
+                fighterData[`weapon${num}attacks`] = weapon.attacks || 0;
+                fighterData[`weapon${num}strength`] = weapon.strength || 0;
+                fighterData[`weapon${num}dmg_hit`] = weapon.dmg_hit || 0;
+                fighterData[`weapon${num}dmg_crit`] = weapon.dmg_crit || 0;
+                fighterData[`weapon${num}min_range`] = weapon.min_range || 0;
+                fighterData[`weapon${num}max_range`] = weapon.max_range || 0;
+                fighterData[`weapon${num}runemark`] = weapon.runemark || '';
             });
         }
+
+        return fighterData;
     });
 
-    // Flatten abilities data
-    abilities.forEach((ability, index) => {
-        Object.keys(ability).forEach(key => {
-            pdfReadyData[`ability${index + 1}${key.charAt(0).toUpperCase() + key.slice(1)}`] = ability[key];
-        });
-    });
+    // 3. Prepare abilities data - array of ability objects
+    const warbandAbilities = abilities.map(ability => ({
+        name: ability.name || '',
+        cost: ability.cost || '',
+        description: ability.description || '',
+        warband: ability.warband || '',
+        runemarks: ability.runemarks || [],
+        _id: ability._id || ''
+    }));
 
-    // Write the final JSON to a file
-    // writeFileSync('pdfready.json', JSON.stringify(pdfReadyData, null, 2), 'utf8');
-    return pdfReadyData;
+    return {
+        warbandInfo,
+        fighters,
+        warbandAbilities
+    };
 }
 
+function downloadJSONFiles(data) {
+    // Create a new ZIP file
+    const zip = new JSZip();
+    
+    // Add each JSON file to the zip
+    zip.file("warband_info.json", JSON.stringify(data.warbandInfo, null, 2));
+    zip.file("warband_fighters.json", JSON.stringify(data.fighters, null, 2));
+    zip.file("warband_abilities.json", JSON.stringify(data.warbandAbilities, null, 2));
 
-function downloadJSONFile(data, filename) {
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-
-    URL.revokeObjectURL(url);
+    // Generate the zip file and trigger download
+    zip.generateAsync({type: "blob"})
+        .then(function(content) {
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "warband_data.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
 }
 
 // // Trigger the download of the JSON file
@@ -179,6 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Failed to load required data files. Make sure fighters.json and abilities.json are present and the page is served from a web server.');
     }
 });
+// Update the click handler to use the new download function
 document.getElementById('generate-btn').addEventListener('click', function () {
     const text = document.getElementById('warcrier-data').value || '';
     if (!text.trim()) {
@@ -186,29 +218,14 @@ document.getElementById('generate-btn').addEventListener('click', function () {
         return;
     }
 
-console.log("Imported Fighter Data:", fighterData);
-console.log("Imported Ability Data:", abilityData);
-
-    // Parse the clipboard text from the textarea
+    // Parse and prepare data as before
     const parsedData = parseWarcryClipboard(text);
-    console.log('Parsed Data:', parsedData);
-
-    // Match fighters from the parsed data
     const matchedFighters = matchFighters(parsedData.fighters, fighterData);
-    console.log('Matched Fighters:', matchedFighters);
-
-    // Find relevant abilities for the matched fighters
     const warbandAbilities = findRelevantAbilities(matchedFighters, abilityData);
-    console.log('Warband Abilities:', warbandAbilities);    
-
-    // Prepare the final JSON data for PDF generation
+    
+    // Prepare and download the three separate files
     const pdfReadyData = preparePDFReadyJson(parsedData, matchedFighters, warbandAbilities);
-    console.log('Prepared PDF Ready Data:', pdfReadyData);
-
-    // Trigger the download of the JSON file
-    downloadJSONFile(pdfReadyData, 'warband2pdf.json');
-
-    console.log('JSON file generated and downloaded:', pdfReadyData);
+    downloadJSONFiles(pdfReadyData);
 });
 
 
