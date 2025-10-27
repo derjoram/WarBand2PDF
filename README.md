@@ -6,7 +6,7 @@ This project is for you, if you
 - then want to customize images and/or numbers in your warband
 - have access to [Affinity Publisher](https://affinity.serif.com/en-gb/publisher/?srsltid=AfmBOooAb7Hoa7UlxKvx7gruuHbA0DcCdDxB98eDkPRXjqU-JyVVciTk).
 
-If you belong to the four people who fit this description, you can use the code to run a local server with 
+If you belong to the four people who fit this description, you can download this repo and use the code to run a local server with 
 
 ```
 cd $pathToDirectory
