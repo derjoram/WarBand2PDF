@@ -1,0 +1,56 @@
+Unit	Stats	Loadout	Special Rules
+Chosen Havoc Master [1] - 70pts
+Qua 3+ Def 3+	
+1x Heavy Halberd (A3, Rending, AP(1))
+Havocbound, Hero, Tough(3), Versatile Attack
+Havoc Master [1] - 80pts
+Qua 3+ Def 3+	
+1x Heavy Hand Weapon (A3, AP(1))
+Caster(2), Havocbound, Hero, Tough(3)
+Warrior [1] - 30pts
+Qua 3+ Def 3+	
+1x Heavy Halberd (A1, Rending, AP(1))
+Havocbound, Versatile Defense Aura
+2x Chosen Warrior [1] - 25pts
+Qua 3+ Def 3+	
+1x Heavy Halberd (A1, Rending, AP(1))
+Havocbound, Versatile Attack
+Chosen Warrior [1] - 20pts
+Qua 3+ Def 3+	
+1x Heavy Hand Weapon (A1, AP(1))
+Havocbound, Versatile Attack
+AP: Targets get -X to Defense rolls when blocking hits.
+
+Caster: Gets X spell tokens at the start of each round, but can’t hold more than 6 tokens at once. At any point before attacking, spend as many tokens as the spell’s value to try casting one or more spells (only one try per spell). Roll one die, on 4+ resolve the effect on a target in line of sight. Models within 18” in line of sight of the caster’s unit may spend any number of spell tokens at the same time before rolling, to give the caster +1/-1 to the roll per token.
+
+Fortified: When units where all models have this rule take hits, those hits count as having AP(-1), to a min. of AP(0).
+
+Havocbound: When this model shoots at enemies over 9" away, or when it charges, its weapons get AP(+1).
+
+Havocbound Boost: Models with Havocbound in this unit always get AP(+1) from Havocbound (instead of only when shooting over 9" away, or when charging).
+
+Hero: Friendly units within 12” may take morale tests using the hero’s Quality, as long as the hero isn’t Shaken.
+
+Rending: Ignores Regeneration, and on unmodified results of 6 to hit, those hits get AP(+4).
+
+Slam: Ignores Cover, and on unmodified results of 1 to block hits, this weapon deals 1 extra wound.
+
+Tough: This model only rolls to check wound effects once it has taken at least X wounds, and is only Knocked Out on rolls of 5+X or more.
+
+Versatile Attack: When this unit is activated, pick one effect: until the end of the activation all models with this rule in it either get AP(+1) when attacking, or get +1 to hit rolls when attacking.
+
+Versatile Defense: When a unit where all models have this rule is activated, pick one effect: the unit either gets +1 to defense rolls, or enemy units get -1 to hit rolls against it. This only applies once (next time the effect would apply) and only lasts until the units' next activation.
+
+Versatile Defense Aura: This model and up to 3 friendly units picked before the start of the game get Versatile Defense. If this model is killed, picked models that are deployed lose the rule.
+
+Cursed Stride (1): Pick one enemy unit within 18", which counts as being in Dangerous Terrain once (next time the effect would apply).
+
+Barbed Chains (1): Pick one enemy unit within 18", which takes 2 hits.
+
+Havoc Boost (2): Pick up to two friendly units within 12", which get Havocbound Boost once (next time the effect would apply).
+
+Impaling Spike (2): Pick up to two enemy models within 18", which takes 2 hits with AP(1).
+
+Dark Shielding (3): Pick up to three friendly units within 12", which get Fortified once (next time the effect would apply).
+
+Thorn Field (3): Pick up to three enemy units within 12", which takes 2 hits with AP(1) and Slam.

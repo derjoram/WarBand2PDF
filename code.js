@@ -23,7 +23,7 @@ async function loadData() {
     }
 }
  
- function parseWarcryClipboard(clipboardText) {
+function parseWarcryClipboard(clipboardText) {
     const lines = clipboardText.trim().split('\n');
     
     // Find the actual content (skip dashes and "Generated on" line)
@@ -233,7 +233,7 @@ const sortedAbilities = warbandAbilities.slice().sort((a, b) => {
     };
 }
 
-function downloadJSONFiles(data) {
+function downloadWarbandJSON(data) {
     // Create a new ZIP file
     const zip = new JSZip();
     
@@ -256,6 +256,170 @@ function downloadJSONFiles(data) {
         });
 }
 
+function downloadOPRJSON(data) {
+    // Create a new ZIP file
+    const zip = new JSZip();
+    
+    // Add each JSON file to the zip
+    zip.file("OPR_units.json", JSON.stringify(data.units, null, 2));
+    zip.file("OPR_special-rules.json", JSON.stringify(data.specialRules, null, 2));
+    zip.file("OPR_army-spells.json", JSON.stringify(data.armySpells, null, 2));
+
+    // Generate the zip file and trigger download
+    zip.generateAsync({type: "blob"})
+        .then(function(content) {
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "OPR_data.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+}
+
+
+// Specific functions for One Page Rules parsing of pasted data to create similar output to the one for the Warbands.
+
+// Parse units functions. 
+function parseOnePageRulesUnits(unitsText) {
+    const lines = unitsText.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    // Skip the first line if it starts with "Unit"
+    let startIndex = 0;
+    if (lines[0] && lines[0].startsWith('Unit')) {
+        startIndex = 1;
+    }
+    
+    const units = [];
+    let currentUnit = null;
+    let srCounter = 1;
+    
+    for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Check if this is a unit header line: $Fightername [$amount] - $Pts pts
+        const unitHeaderMatch = line.match(/^(.+?)\s*\[(\d+)\]\s*-\s*(\d+)\s*pts/i);
+        if (unitHeaderMatch) {
+            // Save previous unit if exists
+            if (currentUnit) {
+                units.push(currentUnit);
+            }
+            
+            // Start new unit with flat structure
+            currentUnit = {
+                name: unitHeaderMatch[1].trim(),
+                amount: parseInt(unitHeaderMatch[2]),
+                points: parseInt(unitHeaderMatch[3]),
+                quality: null,
+                defense: null
+            };
+            continue;
+        }
+        
+        // Check for Quality/Defense line
+        const qualDefMatch = line.match(/Qua[^+]*?(\d+)\+.*?Def[^+]*?(\d+)\+/i);
+        if (qualDefMatch && currentUnit) {
+            currentUnit.quality = parseInt(qualDefMatch[1]);
+            currentUnit.defense = parseInt(qualDefMatch[2]);
+            continue;
+        }
+        
+        // Check for weapon line: $number x $weapon (A$attacks, skills, AP($ap))
+        const weaponMatch = line.match(/^(\d+)x\s*(.+?)\s*\(A(\d+),\s*(.+?),\s*AP\((\d+)\)\)/i);
+        if (weaponMatch && currentUnit) {
+            const weaponNumber = parseInt(weaponMatch[1]);
+            const weaponName = weaponMatch[2].trim();
+            const attacks = parseInt(weaponMatch[3]);
+            const skillsString = weaponMatch[4].trim();
+            const ap = parseInt(weaponMatch[5]);
+            
+            // Parse skills (split by comma and trim)
+            const skills = skillsString.split(',').map(skill => skill.trim()).filter(skill => skill);
+            
+            // Flatten weapon data
+            const weaponIndex = Object.keys(currentUnit).filter(key => key.startsWith('weapon')).length / (5 + skills.length) + 1;
+            currentUnit[`weapon${weaponIndex}name`] = weaponName;
+            currentUnit[`weapon${weaponIndex}number`] = weaponNumber;
+            currentUnit[`weapon${weaponIndex}attacks`] = attacks;
+            currentUnit[`weapon${weaponIndex}ap`] = ap;
+            
+            // Flatten skills
+            skills.forEach((skill, index) => {
+            currentUnit[`weapon${weaponIndex}skill${(index + 1).toString().padStart(2, '0')}`] = skill;
+            });
+            
+            continue;
+        }
+        
+        // Check for special rules line (comma separated)
+        if (line && currentUnit && !line.includes('Quality') && !line.includes('Defense') && !weaponMatch) {
+            const specialRules = line.split(',').map(rule => rule.trim()).filter(rule => rule);
+            let srCounter = 1;
+            specialRules.forEach(rule => {
+                const srKey = `SR${srCounter.toString().padStart(2, '0')}`;
+                currentUnit[srKey] = rule;
+                srCounter++;
+            });
+        }
+    }
+    
+    // Don't forget the last unit
+    if (currentUnit) {
+        units.push(currentUnit);
+    }
+    
+    return units;
+}
+// Parse special rules functions for One Page Rules
+function parseOnePageRulesSpecialRules(specialRulesText) {
+    const lines = specialRulesText.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    const specialRules = [];
+    
+    for (const line of lines) {
+        // Split by colon to separate name from description
+        const colonIndex = line.indexOf(':');
+        if (colonIndex !== -1) {
+            const name = line.substring(0, colonIndex).trim();
+            const description = line.substring(colonIndex + 1).trim();
+            
+            specialRules.push({
+                SR_name: name,
+                SR_description: description
+            });
+        }
+    }
+    
+    return specialRules;
+}
+
+// Parse army spells functions for One Page Rules
+function parseOnePageRulesArmySpells(armySpellsText) {
+    const lines = armySpellsText.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    const armySpells = [];
+    
+    for (const line of lines) {
+        // Split by parentheses to separate name from value and description
+        const parenMatch = line.match(/^(.+?)\s*\((\d+)\)\s*:\s*(.+)$/);
+        if (parenMatch) {
+            const name = parenMatch[1].trim();
+            const value = parseInt(parenMatch[2]);
+            const description = parenMatch[3].trim();
+            
+            armySpells.push({
+                AS_name: name,
+                AS_value: value,
+                AS_description: description
+            });
+        }
+    }
+    
+    return armySpells;
+}
+
 // // Trigger the download of the JSON file
 // downloadJSONFile(preparePDFReadyJson(parsedData, matchedFighters, warbandabilities), 'warband2pdf.json');
 
@@ -267,22 +431,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Failed to load required data files. Make sure fighters.json and abilities.json are present and the page is served from a web server.');
     }
 });
-// Update the click handler to use the new download function
+// Update the click handler to use the new download function and integrate selector logic
 document.getElementById('generate-btn').addEventListener('click', function () {
-    const text = document.getElementById('warcrier-data').value || '';
-    if (!text.trim()) {
-        alert('Paste your WarCrier export into the textarea first.');
-        return;
-    }
-
-    // Parse and prepare data as before
-    const parsedData = parseWarcryClipboard(text);
-    const matchedFighters = matchFighters(parsedData.fighters, fighterData);
-    const warbandAbilities = findRelevantAbilities(matchedFighters, abilityData);
+    const selectedOption = document.querySelector('input[name="mode"]:checked')?.value;
     
-    // Prepare and download the three separate files
-    const pdfReadyData = preparePDFReadyJson(parsedData, matchedFighters, warbandAbilities);
-    downloadJSONFiles(pdfReadyData);
+    // Debug log to see what value is selected
+    console.log('Selected option:', selectedOption);
+    
+    if (selectedOption === 'WarCry') {
+        const text = document.getElementById('warcrier-data').value || '';
+        if (!text.trim()) {
+            alert('Paste your WarCrier export into the textarea first.');
+            return;
+        }
+
+        // Parse and prepare data for Warcry
+        const parsedData = parseWarcryClipboard(text);
+        const matchedFighters = matchFighters(parsedData.fighters, fighterData);
+        const warbandAbilities = findRelevantAbilities(matchedFighters, abilityData);
+        
+        // Prepare and download the three separate files
+        const pdfReadyData = preparePDFReadyJson(parsedData, matchedFighters, warbandAbilities);
+        downloadWarbandJSON(pdfReadyData);
+    } 
+    else if (selectedOption === 'opr') {
+        const unitsText = document.getElementById('opr-units').value || '';
+        const specialRulesText = document.getElementById('opr-special-rules').value || '';
+        const armySpellsText = document.getElementById('opr-army-spells').value || '';
+        
+        if (!unitsText.trim()) {
+            alert('Please paste your units data into the Units textarea.');
+            return;
+        }
+        
+        // Parse One Page Rules data
+        const units = parseOnePageRulesUnits(unitsText);
+        const specialRules = specialRulesText.trim() ? parseOnePageRulesSpecialRules(specialRulesText) : [];
+        const armySpells = armySpellsText.trim() ? parseOnePageRulesArmySpells(armySpellsText) : [];
+        
+        // Prepare OPR data in the same format as Warcry
+        const oprData = {
+            units: units,
+            specialRules: specialRules,
+            armySpells: armySpells
+        };
+        
+        // Use the existing download function
+        downloadOPRJSON(oprData);
+    }
+    else {
+        alert(`Please select a game type first. Current selection: ${selectedOption || 'none'}`);
+    }
+});
+
+// Also add event listener for the OPR-specific button
+document.getElementById('generate-opr-btn')?.addEventListener('click', function () {
+    // Force the mode to OPR and trigger the same logic
+    const oprRadio = document.querySelector('input[name="mode"][value="opr"]');
+    if (oprRadio) oprRadio.checked = true;
+    
+    // Trigger the same logic as the main button
+    document.getElementById('generate-btn').click();
 });
 
 

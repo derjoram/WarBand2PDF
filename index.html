@@ -10,19 +10,33 @@
 <body>
     <div class="container">
         <header>
-            <h1>WarCry Warband JSON Generator</h1>
+            <h1>Tabletop Fantasy Skirmish JSON Generator</h1>
         </header>
 
-        <div class="description">
-            <h2>How it works</h2>
-            <div class="step">Export your warband from WarCrier.net into your clipboard</div>
-            <div class="step">Paste the exported text into the box below</div>
-            <div class="step">Click "Generate JSON" to create three structured files that include all fighter stats and abilities</div>
-            <div class="step">Use the generated JSON file with the Affinity Publisher Templates for Fighters and Abilities which you can download with <a href="https://github.com/derjoram/WarBand2PDF">all relevant assets from the github page.</a></div>
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+            <label class="radio-option">
+                <input type="radio" name="mode" value="WarCry" checked>
+                <span>WarCry Warband</span>
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="mode" value="opr">
+                <span>One Page Rules</span>
+            </label>
         </div>
 
-        <div class="input-section">
-            <textarea id="warcrier-data" placeholder="Paste your WarCrier export here...
+        <!-- Warband View -->
+        <div id="warband-view" class="mode-view">
+            <div class="description">
+                <h2>How it works</h2>
+                <div class="step">Export your warband from WarCrier.net into your clipboard</div>
+                <div class="step">Paste the exported text into the box below</div>
+                <div class="step">Click "Generate JSON" to create three structured files that include all fighter stats and abilities</div>
+                <div class="step">Use the generated JSON file with the Affinity Publisher Templates for Fighters and Abilities which you can download with <a href="https://github.com/derjoram/WarBand2PDF">all relevant assets from the github page.</a></div>
+            </div>
+
+            <div class="input-section">
+                <textarea id="warcrier-data" placeholder="Paste your WarCrier export here...
 Example format:
 ```
 ----------
@@ -42,9 +56,37 @@ Slaves to Darkness
 ----------
 Generated on Warcrier.net
 ```"></textarea>
-            
-            <div class="button-group">
-                <button id="generate-btn">Generate JSON</button>
+                
+                <div class="button-group">
+                    <button id="generate-btn">Generate JSON</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- One Page Rules View -->
+        <div id="opr-view" class="mode-view" style="display: none;">
+            <div class="description">
+                <h2>One Page Rules Data Entry</h2>
+                <div class="step">Copy and paste the units table from the print view in the OPR army builder. Make sure to toggle the option "Show Table".</div>
+                <div class="step">(Optional) Copy and paste the "Special Rules" section.</div>
+                <div class="step">(Optional) Copy and paste the "Army Spells" section.</div>
+                <div class="step">Click "Generate OPR JSON" to create your structured data in a zip file and download it to your machine. Use the structured data with your template for PDF generation.</div>
+                <p>Note: this script has only been tested with One Page Rules Fantasy Skirmish Armies.</p>
+            </div>
+
+            <div class="input-section">
+                <h3>Units</h3>
+                <textarea id="opr-units" placeholder="Enter unit data here..."></textarea>
+                
+                <h3>Special Rules</h3>
+                <textarea id="opr-special-rules" placeholder="Enter special rules here..."></textarea>
+                
+                <h3>Army Spells</h3>
+                <textarea id="opr-army-spells" placeholder="Enter army spells here..."></textarea>
+                
+                <div class="button-group">
+                    <button id="generate-opr-btn">Generate OPR JSON</button>
+                </div>
             </div>
         </div>
 
@@ -52,7 +94,27 @@ Generated on Warcrier.net
             <p>This tool enhances WarCrier exports with detailed fighter stats and abilities for PDF generation. It is not in any way affiliated with WarCry, Warhammer, or WarCrier. </p>
         </footer>
     </div>
+        <script src="code.js"></script>
 
-    <script src="code.js"></script>
+    <script>
+        // Handle mode switching
+        document.addEventListener('DOMContentLoaded', function() {
+            const modeRadios = document.querySelectorAll('input[name="mode"]');
+            const warbandView = document.getElementById('warband-view');
+            const oprView = document.getElementById('opr-view');
+
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'WarCry') {
+                        warbandView.style.display = 'block';
+                        oprView.style.display = 'none';
+                    } else if (this.value === 'opr') {
+                        warbandView.style.display = 'none';
+                        oprView.style.display = 'block';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
